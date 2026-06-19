@@ -12,6 +12,7 @@
 仅使用Python标准库（time + threading），不依赖APScheduler等第三方库。
 """
 
+import os
 import time
 import threading
 from dataclasses import dataclass, field
