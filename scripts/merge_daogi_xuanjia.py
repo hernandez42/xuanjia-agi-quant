@@ -11,8 +11,8 @@ Daogi × 玄甲 18维融合模型
   2. momentum_5d         — 5日价格动量
   3. vcp_score           — 波动率收缩模式评分
   4. range_5d            — 5日价格区间
-  5. paper_a_factor_1    — Paper A因子1（假设：换手率异动）
-  6. paper_a_factor_2    — Paper A因子2（假设：振幅偏离）
+  5. paper_a_factor_1    — Paper A因子1（换手率异动）
+  6. paper_a_factor_2    — Paper A因子2（振幅偏离）
 
 - 玄甲12维：各 0.04 = 0.48
   1. macd_dif            — MACD快线

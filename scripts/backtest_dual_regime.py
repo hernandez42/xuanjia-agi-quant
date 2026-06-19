@@ -11,7 +11,7 @@ backtest_dual_regime.py — 玄甲4步回测(Q1趋势+H1震荡盲测)
 3. 对比两种市场环境下的回测指标
 4. 同时运行 daogi 6维策略作为对照
 
-输出：详细回测报告到 /workspace/xuanjia/results/backtest_dual_regime_20260619.md
+输出：详细回测报告到 <xuanjia_dir>/results/backtest_dual_regime_20260619.md
 """
 
 from __future__ import annotations
@@ -903,7 +903,9 @@ def main():
     )
 
     # ---- 生成报告 ----
-    output_path = "/workspace/xuanjia/results/backtest_dual_regime_20260619.md"
+    _OUTPUT_DIR = os.path.join(_XUANJIA_DIR, "results")
+    os.makedirs(_OUTPUT_DIR, exist_ok=True)
+    output_path = os.path.join(_OUTPUT_DIR, "backtest_dual_regime_20260619.md")
     generate_report(trend_result, osc_result, output_path)
 
     # ---- 输出最终对比表 ----

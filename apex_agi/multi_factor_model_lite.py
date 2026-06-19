@@ -433,6 +433,12 @@ class FactorScorerLite:
                     bonus = 0.05 * (direction_agreement - 0.6) / 0.4
                     total_score += bonus * (1 if total_score > 0 else -1 if total_score < 0 else 0)
 
+        # V6.3 修复：归一化评分到 [-1, +1]
+        # 理论最大绝对值 = sum(weights) * 3 + 0.05 ≈ 3.05
+        # 使用 tanh 压缩确保输出严格在 (-1, +1)
+        if total_score != 0.0:
+            total_score = math.tanh(total_score / 1.5)
+
         return total_score, contributions
 
     def score_single_stock(

@@ -440,6 +440,10 @@ def run_verification():
         # 3. 计算多因子评分
         mf_score, contributions = factor_scorer.compute_score(raw_factors)
 
+        # V6.3 修复：归一化评分到 [-1, +1]
+        if mf_score != 0.0:
+            mf_score = math.tanh(mf_score / 1.5)
+
         # 4. 计算融合信号（使用 fuse_with_news 注入消息面参数）
         # 根据主力资金流向调整消息面情绪
         main_flow = stock["main_net_inflow_yi"]
@@ -596,7 +600,10 @@ def generate_report(results, accuracy, up_accuracy, down_accuracy,
     down_stocks = [r for r in results if r["actual_change"] < 0]
 
     lines = []
-    lines.append("# 玄甲96因子融合模型 — 真实数据验证报告")
+    lines.append("# 玄甲96因子融合模型 -- 真实数据验证报告")
+    lines.append("")
+    lines.append("> **[WARNING] 本报告为单日快照验证（N=16），OHLCV历史数据为反推生成，")
+    lines.append("> 评分结果不能作为IC验证或回测证据，仅供因子方向性参考。**")
     lines.append("")
     lines.append(f"**验证日期**: 2026年6月18日 (端午前最后交易日)")
     lines.append(f"**验证标的**: 16只A股核心蓝筹/科技股")

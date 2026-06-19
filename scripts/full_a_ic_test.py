@@ -424,6 +424,7 @@ def main():
             else:
                 real_count += 1
             ohlcv = kline_to_ohlcv(klines, code)
+            ohlcv["_data_source"] = "mock_fallback" if is_mock else "real"  # V6.3: 标注数据来源
             all_ohlcv.append(ohlcv)
         if (i // BATCH_SIZE + 1) % 10 == 0 or i + BATCH_SIZE >= total:
             print(f"      进度: {min(i + BATCH_SIZE, total)}/{total}  真实:{real_count} mock:{mock_count}")
@@ -442,12 +443,14 @@ def main():
     # 为每只股票计算因子
     factor_data: Dict[str, List[float]] = {name: [] for name in daily_factor_names}
     returns_list: List[float] = []
+    data_source_list: List[str] = []  # V6.3: 逐行记录数据来源
 
     for idx, ohlcv in enumerate(all_ohlcv):
         factors = flib.compute_all_factors(ohlcv)
         for name in daily_factor_names:
             factor_data[name].append(factors.get(name, float("nan")))
         returns_list.append(ohlcv.get("future_return_5d", float("nan")))
+        data_source_list.append(ohlcv.get("_data_source", "unknown"))
         if (idx + 1) % 500 == 0 or idx == len(all_ohlcv) - 1:
             print(f"      已计算: {idx + 1}/{len(all_ohlcv)}")
 
@@ -467,11 +470,15 @@ def main():
 
     # 5. 输出CSV
     print(f"\n[5/5] 输出结果到 {RESULT_CSV} ...")
+    # V6.3: 统计数据来源比例
+    real_ratio = real_count / len(all_ohlcv) * 100 if all_ohlcv else 0
+    mock_ratio = mock_count / len(all_ohlcv) * 100 if all_ohlcv else 0
+    data_source_label = f"real({real_ratio:.0f}%)+mock_fallback({mock_ratio:.0f}%)"
+
     with open(RESULT_CSV, "w", encoding="utf-8-sig") as f:
-        f.write("因子名,IC,|IC|,有效样本数,含义,数据来源说明\n")
+        f.write("因子名,IC,|IC|,有效样本数,含义,data_source\n")
         for r in ic_results:
-            f.write(f"{r['factor']},{r['ic']:.6f},{r['abs_ic']:.6f},{r['n_valid']},{r['meaning']},"
-                    f"{'mock_fallback' if mock_count > 0 else 'real'}\n")
+            f.write(f"{r['factor']},{r['ic']:.6f},{r['abs_ic']:.6f},{r['n_valid']},{r['meaning']},{data_source_label}\n")
 
     print(f"\n[完成] 结果已保存: {RESULT_CSV}")
 
