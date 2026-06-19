@@ -50,3 +50,11 @@ snapshots/
 *.tmp
 data_channel.log
 evolution.log
+
+# Coverage
+htmlcov/
+.coverage
+.pytest_cache/
+
+# mypy
+.mypy_cache/
