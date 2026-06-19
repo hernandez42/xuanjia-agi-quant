@@ -58,3 +58,31 @@ htmlcov/
 
 # mypy
 .mypy_cache/
+
+# Evolution & Code (historical, not core)
+evolution/
+code/
+pi-integration/
+
+# Apex AGI generated data (keep only .py files)
+apex_agi/*.json
+apex_agi/*.md
+apex_agi/close_market_data.json
+apex_agi/latest_market_data.json
+apex_agi/midday_market_data.json
+apex_agi/news_sentiment_result.json
+apex_agi/superpower_fusion_result.json
+apex_agi/prediction_*.json
+apex_agi/validation_*.json
+apex_agi/verification_result_*.json
+apex_agi/x_god_strategy_manifest.json
+apex_agi/xuanjia_*_manifest.json
+apex_agi/superpower_verification_report.json
+apex_agi/correction_rules.json
+apex_agi/dsa_config.json
+apex_agi/learned_strategies.json
+apex_agi/_asi.json
+
+# Root-level scripts (not core)
+xuanjia-cli.py
+xuanjia_mcp.py
