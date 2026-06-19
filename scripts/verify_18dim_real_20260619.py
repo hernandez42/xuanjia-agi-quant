@@ -411,6 +411,10 @@ def run_verification():
     print("  验证日期: 2026年6月18日 (端午前最后交易日)")
     print("  验证标的: 16只A股核心蓝筹/科技股")
     print("=" * 80)
+    print("")
+    print("  ⚠️  WARNING: N=16, OHLCV历史数据为反推生成, 单日快照")
+    print("  ⚠️  评分结果不能作为IC验证或回测证据, 仅供因子方向性参考")
+    print("")
 
     # 初始化引擎
     factor_lib = FactorLibrary()

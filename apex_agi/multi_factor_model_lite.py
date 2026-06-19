@@ -200,47 +200,78 @@ class FactorLibraryLite:
         return _safe_divide(closes[-1] - ma5, ma5, 0.0) * 100
 
     def kdj_d(self, ohlcv_data: Dict) -> float:
-        """KDJ指标 — D值"""
+        """
+        KDJ指标 — D值（标准9日滚动递推）
+
+        标准KDJ算法:
+        1. 对每根K线计算RSV = (C - L9) / (H9 - L9) × 100
+        2. K = 2/3 × K_prev + 1/3 × RSV（初始K=50）
+        3. D = 2/3 × D_prev + 1/3 × K（初始D=50）
+        4. 返回最后一根K线的D值，归一化到 [-1, +1]
+        """
         closes = ohlcv_data.get("close", [])
         highs = ohlcv_data.get("high", [])
         lows = ohlcv_data.get("low", [])
         n = 9
         if len(closes) < n:
-            return 50.0
+            return 0.0
+
         k_val = 50.0
         d_val = 50.0
-        for i in range(n):
-            h = max(highs[-(n - i):])
-            l = min(lows[-(n - i):])
-            if h == l:
-                rsv_i = 50.0
+        # 从第n根K线开始，逐根递推（标准做法）
+        for i in range(n, len(closes)):
+            h9 = max(highs[i - n + 1:i + 1])
+            l9 = min(lows[i - n + 1:i + 1])
+            if h9 == l9:
+                rsv = 50.0
             else:
-                rsv_i = (closes[-(n - i)] - l) / (h - l) * 100.0
-            k_val = 2.0 / 3.0 * k_val + 1.0 / 3.0 * rsv_i
+                rsv = (closes[i] - l9) / (h9 - l9) * 100.0
+            k_val = 2.0 / 3.0 * k_val + 1.0 / 3.0 * rsv
             d_val = 2.0 / 3.0 * d_val + 1.0 / 3.0 * k_val
-        return d_val
+
+        # 归一化: D值范围 [0, 100] → [-1, +1]
+        return (d_val - 50.0) / 50.0
 
     def rsi14(self, ohlcv_data: Dict) -> float:
-        """RSI(14) 相对强弱指标"""
+        """
+        RSI(14) 相对强弱指标（Wilder平滑法）
+
+        标准Wilder RSI算法:
+        1. 前14日计算平均涨幅/跌幅（简单平均）
+        2. 第15日起用指数平滑: avg_gain = (prev_avg_gain × 13 + current_gain) / 14
+        3. RS = avg_gain / avg_loss
+        4. RSI = 100 - 100/(1+RS)
+        5. 归一化到 [-1, +1]
+        """
         closes = ohlcv_data.get("close", [])
         if len(closes) < 15:
-            return 50.0
-        gains = []
-        losses = []
-        for i in range(1, min(15, len(closes))):
-            change = closes[-(i + 1)] - closes[-i]
-            if change > 0:
-                gains.append(change)
-                losses.append(0.0)
-            else:
-                gains.append(0.0)
-                losses.append(abs(change))
-        avg_gain = sum(gains) / 14.0
-        avg_loss = sum(losses) / 14.0
+            return 0.0
+
+        # 计算每日涨跌
+        changes = []
+        for i in range(1, len(closes)):
+            changes.append(closes[i] - closes[i - 1])
+
+        # 前14日简单平均
+        init_gains = [max(0, c) for c in changes[:14]]
+        init_losses = [max(0, -c) for c in changes[:14]]
+        avg_gain = sum(init_gains) / 14.0
+        avg_loss = sum(init_losses) / 14.0
+
+        # 第15日起Wilder指数平滑
+        for i in range(14, len(changes)):
+            gain = max(0, changes[i])
+            loss = max(0, -changes[i])
+            avg_gain = (avg_gain * 13.0 + gain) / 14.0
+            avg_loss = (avg_loss * 13.0 + loss) / 14.0
+
         if avg_loss == 0:
-            return 100.0
+            return 1.0  # 归一化后的100
         rs = avg_gain / avg_loss
-        return 100.0 - 100.0 / (1.0 + rs)
+        rsi = 100.0 - 100.0 / (1.0 + rs)
+
+        # 归一化: RSI [0, 100] → [-1, +1]
+        return (rsi - 50.0) / 50.0
 
     def main_net_inflow_ratio(self, ohlcv_data: Dict) -> float:
         """主力净流入比率"""

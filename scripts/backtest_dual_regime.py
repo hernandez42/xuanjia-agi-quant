@@ -905,6 +905,10 @@ def main():
     # ---- 生成报告 ----
     _OUTPUT_DIR = os.path.join(_XUANJIA_DIR, "results")
     os.makedirs(_OUTPUT_DIR, exist_ok=True)
+    # fallback: 如果目录创建失败，用 /tmp
+    if not os.path.isdir(_OUTPUT_DIR):
+        _OUTPUT_DIR = "/tmp/xj/results"
+        os.makedirs(_OUTPUT_DIR, exist_ok=True)
     output_path = os.path.join(_OUTPUT_DIR, "backtest_dual_regime_20260619.md")
     generate_report(trend_result, osc_result, output_path)
 
