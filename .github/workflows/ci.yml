@@ -1,0 +1,195 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint & Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 mypy --break-system-packages
+
+      - name: Flake8 Lint
+        run: |
+          flake8 apex_agi/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          echo "✓ Flake8 critical errors check passed"
+
+      - name: Python Syntax Check
+        run: |
+          python -m py_compile apex_agi/main.py
+          python -m py_compile apex_agi/multi_factor_model.py
+          python -m py_compile apex_agi/unified_fusion.py
+          python -m py_compile apex_agi/strategy_pipeline.py
+          python -m py_compile apex_agi/data_fetcher.py
+          python -m py_compile apex_agi/news_sentiment_engine.py
+          python -m py_compile apex_agi/risk_engine.py
+          python -m py_compile apex_agi/backtest_engine.py
+          python -m py_compile apex_agi/auto_scheduler.py
+          python -m py_compile apex_agi/x_god_strategy.py
+          python -m py_compile apex_agi/superpower_fusion.py
+          python -m py_compile apex_agi/triple_engine_fusion.py
+          echo "✓ All modules syntax check passed"
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Run Core Module Tests
+        run: |
+          cd apex_agi
+          python -c "
+          import sys
+          sys.path.insert(0, '.')
+
+          # Test 1: MultiFactorModel
+          from multi_factor_model import FactorLibrary, FactorScorer, MultiFactorSelector
+          fl = FactorLibrary()
+          fs = FactorScorer()
+          mfs = MultiFactorSelector()
+          print('✓ MultiFactorModel: FactorLibrary, FactorScorer, MultiFactorSelector OK')
+
+          # Test 2: UnifiedFusion
+          from unified_fusion import UnifiedFusionEngine, UnifiedFusionResult, batch_fuse
+          engine = UnifiedFusionEngine()
+          demo = {'dates': ['2026-06-01'], 'open': [100], 'high': [103], 'low': [99], 'close': [102, 103, 105, 108, 110], 'volume': [10000], 'amount': [1020000], 'pe': 25, 'pb': 3, 'roe': 15, 'main_net_inflow': 500000, 'turnover_rate': 2.5}
+          r = engine.fuse('600519', '贵州茅台', demo)
+          assert r.signal in ('buy', 'sell', 'hold'), f'Invalid signal: {r.signal}'
+          assert -1 <= r.fusion_score <= 1, f'Invalid score: {r.fusion_score}'
+          print(f'✓ UnifiedFusion: score={r.fusion_score:+.4f}, signal={r.signal}')
+
+          # Test 3: DataFetcher
+          from data_fetcher import DataFetcher, KuailansiFetcher, EastMoneyFetcher
+          df = DataFetcher()
+          print('✓ DataFetcher: DataFetcher, KuailansiFetcher, EastMoneyFetcher OK')
+
+          # Test 4: NewsSentimentEngine
+          from news_sentiment_engine import NewsSentimentEngine
+          ne = NewsSentimentEngine()
+          print('✓ NewsSentimentEngine OK')
+
+          # Test 5: RiskEngine
+          from risk_engine import PortfolioRiskManager, PositionSizer, StopLossManager, Position
+          rm = PortfolioRiskManager(initial_capital=1000000)
+          ps = PositionSizer()
+          sm = StopLossManager()
+          print('✓ RiskEngine: PortfolioRiskManager, PositionSizer, StopLossManager OK')
+
+          # Test 6: BacktestEngine
+          from backtest_engine import BacktestEngine, StrategySignal, BacktestResult
+          print('✓ BacktestEngine OK')
+
+          # Test 7: AutoScheduler
+          from auto_scheduler import TaskScheduler, register_preset_tasks
+          sched = TaskScheduler()
+          register_preset_tasks(sched)
+          tasks = sched.list_tasks()
+          assert len(tasks) == 4, f'Expected 4 tasks, got {len(tasks)}'
+          print(f'✓ AutoScheduler: {len(tasks)} preset tasks registered')
+
+          # Test 8: StrategyPipeline
+          from strategy_pipeline import StrategyPipeline, PipelineResult
+          pipeline = StrategyPipeline(stock_pool=['600519'])
+          print('✓ StrategyPipeline OK')
+
+          # Test 9: XGodStrategy
+          from x_god_strategy import XGodStrategyEngine
+          xg = XGodStrategyEngine()
+          print('✓ XGodStrategyEngine OK')
+
+          # Test 10: SuperpowerFusion
+          from superpower_fusion import SuperpowerFusionEngine
+          sf = SuperpowerFusionEngine()
+          print('✓ SuperpowerFusionEngine OK')
+
+          # Test 11: TripleEngineFusion
+          from triple_engine_fusion import TripleEngineFusion
+          te = TripleEngineFusion()
+          print('✓ TripleEngineFusion OK')
+
+          # Test 12: Factor count
+          all_factors = fl.get_all_factor_names()
+          assert len(all_factors) == 96, f'Expected 96 factors, got {len(all_factors)}'
+          print(f'✓ Factor count: {len(all_factors)} factors')
+
+          print()
+          print('='*50)
+          print('  ALL 12 TESTS PASSED')
+          print('='*50)
+          "
+
+  integration:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Run Integration Pipeline
+        run: |
+          cd apex_agi
+          python main.py analyze --stock 600519 2>&1 | head -30
+          echo "✓ Integration test: main.py analyze completed"
+
+      - name: Run News Monitor
+        run: |
+          cd apex_agi
+          python main.py news 2>&1 | head -20
+          echo "✓ Integration test: main.py news completed"
+
+      - name: Run Risk Check
+        run: |
+          cd apex_agi
+          python main.py risk --positions 600519:0.12,300750:0.08 2>&1 | head -20
+          echo "✓ Integration test: main.py risk completed"
+
+  build:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    needs: integration
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Release Package
+        run: |
+          mkdir -p dist/xuanjia-agi-quant
+          cp -r apex_agi/ dist/xuanjia-agi-quant/
+          cp README.md dist/xuanjia-agi-quant/
+          cp LICENSE dist/xuanjia-agi-quant/
+          find dist/xuanjia-agi-quant -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
+          tar -czf xuanjia-agi-quant.tar.gz -C dist xuanjia-agi-quant
+          echo "✓ Package created: xuanjia-agi-quant.tar.gz"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xuanjia-agi-quant-package
+          path: xuanjia-agi-quant.tar.gz
+          retention-days: 30

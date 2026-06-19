@@ -1,0 +1,22 @@
+# CODEOWNERS — 代码所有者
+# 每行格式: pattern @username
+
+# 核心引擎
+/apex_agi/multi_factor_model.py    @hernandez42
+/apex_agi/unified_fusion.py        @hernandez42
+/apex_agi/strategy_pipeline.py      @hernandez42
+/apex_agi/data_fetcher.py          @hernandez42
+/apex_agi/news_sentiment_engine.py @hernandez42
+/apex_agi/risk_engine.py           @hernandez42
+/apex_agi/backtest_engine.py       @hernandez42
+/apex_agi/auto_scheduler.py        @hernandez42
+/apex_agi/x_god_strategy.py        @hernandez42
+/apex_agi/superpower_fusion.py     @hernandez42
+/apex_agi/triple_engine_fusion.py  @hernandez42
+/apex_agi/main.py                   @hernandez42
+
+# CI/CD
+/.github/                           @hernandez42
+
+# 测试
+/tests/                             @hernandez42
