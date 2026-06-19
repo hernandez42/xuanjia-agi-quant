@@ -467,11 +467,12 @@ class FactorLibrary:
         """
         closes = ohlcv_data.get("close", [])
         highs = ohlcv_data.get("high", [])
+        lows = ohlcv_data.get("low", [])
         if len(closes) < 21:
             return 0.0
         # 20日最高价和最低价（不含当日）
         high_20 = max(highs[-21:-1])
-        low_20 = min(lows[-21:-1]) if len(ohlcv_data.get("low", [])) >= 21 else min(closes[-21:-1])
+        low_20 = min(lows[-21:-1]) if len(lows) >= 21 else min(closes[-21:-1])
         current = closes[-1]
         range_val = high_20 - low_20
         if range_val == 0:
