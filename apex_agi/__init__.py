@@ -17,13 +17,17 @@ apex_agi — 玄甲AGI量化投资系统
   - news_sentiment_engine: 消息面情绪分析引擎
   - strategy_pipeline:     统一策略流水线（串联7大引擎）
   - auto_scheduler:        自动化任务调度器
+  - us_market_tracker:     美股跟踪体系（三级信号+仓位建议）
+  - market_sentiment_engine: 市场情绪/冰点分析引擎
+  - limitup_tracker:       连板天梯 + 主线分化 + 毕业照判断
+  - opening_strategy:      低开应对策略（四种走法）
   - main:                  统一命令行入口
 
-版本: V6.3 完整集成版
+版本: V6.4 小青龙体系融合版
 ═══════════════════════════════════════════════════════════════════════════════
 """
 
-__version__ = "6.3.0"
+__version__ = "6.4.0"
 __author__ = "玄甲AGI"
 
 # 导出核心类（按需导入，避免循环依赖）
@@ -66,6 +70,11 @@ __all__ = [
     "TaskScheduler",
     "CronParser",
     "register_preset_tasks",
+    # 小青龙体系
+    "USMarketTracker",
+    "MarketSentimentEngine",
+    "LimitUpTracker",
+    "OpeningStrategy",
 ]
 
 
@@ -111,6 +120,11 @@ def _lazy_import(name: str):
         "TaskScheduler": ("auto_scheduler", "TaskScheduler"),
         "CronParser": ("auto_scheduler", "CronParser"),
         "register_preset_tasks": ("auto_scheduler", "register_preset_tasks"),
+        # 小青龙体系
+        "USMarketTracker": ("us_market_tracker", "USMarketTracker"),
+        "MarketSentimentEngine": ("market_sentiment_engine", "MarketSentimentEngine"),
+        "LimitUpTracker": ("limitup_tracker", "LimitUpTracker"),
+        "OpeningStrategy": ("opening_strategy", "OpeningStrategy"),
     }
     module_name, attr_name = module_map.get(name, (None, None))
     if module_name is None:

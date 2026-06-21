@@ -11,6 +11,10 @@ main.py — 玄甲AGI 统一入口
   4. 消息面监控 (news)        — 获取并分析快兰斯实时快讯
   5. 风控检查 (risk)          — 检查当前持仓的风险状态
   6. 调度器启动 (scheduler)   — 启动自动化任务调度器
+  7. 美股跟踪 (us-track)      — 跟踪美股信号，输出A股仓位建议
+  8. 情绪冰点 (sentiment)     — 分析市场情绪、冰点级别、关键点位
+  9. 连板天梯 (limitup)       — 跟踪连板梯队、主线强度、分化判断
+ 10. 低开应对 (opening)       — 根据开盘情况生成四种走法应对策略
 
 使用方式:
   python main.py daily-scan --stocks 600519,300750,002594
@@ -19,6 +23,10 @@ main.py — 玄甲AGI 统一入口
   python main.py news
   python main.py risk --positions 600519:0.12,300750:0.08
   python main.py scheduler --duration 300
+  python main.py us-track
+  python main.py sentiment --index 4068 --down 3900 --limitup 22
+  python main.py limitup
+  python main.py opening --open 4055 --prev-close 4068 --volume-ratio 0.8
 ═══════════════════════════════════════════════════════════════════════════════
 """
 
@@ -278,6 +286,120 @@ def cmd_scheduler(args):
         print(f"\n  [错误] 调度器启动失败: {e}")
 
 
+def cmd_us_track(args):
+    """美股跟踪命令"""
+    print("=" * 70)
+    print("  玄甲AGI — 美股跟踪体系")
+    print("=" * 70)
+
+    try:
+        from us_market_tracker import USMarketTracker
+        tracker = USMarketTracker()
+
+        data = tracker.fetch_us_data()
+        signal = tracker.analyze_signals(data)
+        advice = tracker.get_position_advice(signal)
+
+        print(f"\n  当前信号: {signal['signal_name']} ({signal['signal_level']})")
+        print(f"  建议仓位: {advice['position_desc']}")
+        print(f"  操作建议: {advice['action']}")
+        print("  决策理由:")
+        for line in advice.get("rationale", [])[:5]:
+            print(f"    - {line}")
+
+        if args.output:
+            report = {"us_market_data": data, "signal_analysis": signal, "position_advice": advice}
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump(report, f, ensure_ascii=False, indent=2)
+            print(f"\n  报告已保存: {args.output}")
+    except Exception as e:
+        print(f"\n  [错误] 美股跟踪失败: {e}")
+
+
+def cmd_sentiment(args):
+    """情绪冰点命令"""
+    print("=" * 70)
+    print("  玄甲AGI — 市场情绪/冰点分析")
+    print("=" * 70)
+
+    try:
+        from market_sentiment_engine import MarketSentimentEngine
+        engine = MarketSentimentEngine()
+
+        # 构建市场快照
+        snapshot = {
+            "index_close": args.index or 4068,
+            "prev_close": args.prev_close or 4090,
+            "down_count": args.down or 3900,
+            "limit_up": args.limitup or 22,
+            "limit_down": args.limitdown or 71,
+            "northbound_net": args.northbound or 140.0,
+            "turnover": args.turnover or 3.34,
+            "ma30": args.ma30 or 4130,
+        }
+
+        engine.print_report(snapshot)
+
+        if args.output:
+            report = engine.generate_report(snapshot)
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump(report, f, ensure_ascii=False, indent=2)
+            print(f"\n  报告已保存: {args.output}")
+    except Exception as e:
+        print(f"\n  [错误] 情绪分析失败: {e}")
+
+
+def cmd_limitup(args):
+    """连板天梯命令"""
+    print("=" * 70)
+    print("  玄甲AGI — 连板天梯 + 主线分化")
+    print("=" * 70)
+
+    try:
+        from limitup_tracker import LimitUpTracker
+        tracker = LimitUpTracker()
+        tracker.print_report()
+
+        if args.output:
+            report = tracker.generate_report()
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump(report, f, ensure_ascii=False, indent=2)
+            print(f"\n  报告已保存: {args.output}")
+    except Exception as e:
+        print(f"\n  [错误] 连板天梯失败: {e}")
+
+
+def cmd_opening(args):
+    """低开应对命令"""
+    print("=" * 70)
+    print("  玄甲AGI — 低开应对策略")
+    print("=" * 70)
+
+    try:
+        from opening_strategy import OpeningStrategy
+        strategy = OpeningStrategy()
+
+        open_price = args.open_price or 4055.0
+        prev_close = args.prev_close or 4068.0
+        volume_ratio = args.volume_ratio or 0.8
+        northbound = args.northbound or 140.0
+
+        # 判断量能趋势和修复速度
+        volume_trend = "缩量" if volume_ratio < 0.9 else "放量" if volume_ratio > 1.1 else "平量"
+        gap = (open_price - prev_close) / prev_close * 100
+        recovery_speed = "低走" if gap < -1.0 else "平走" if abs(gap) < 0.5 else "高走"
+
+        plan = strategy.generate_strategy(open_price, prev_close, volume_trend, recovery_speed)
+        strategy.print_strategy(plan)
+
+        if args.output:
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump(plan, f, ensure_ascii=False, indent=2)
+            print(f"\n  报告已保存: {args.output}")
+    except Exception as e:
+        print(f"\n  [错误] 低开应对失败: {e}")
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 #  命令行参数解析
 # ═══════════════════════════════════════════════════════════════════════════
@@ -327,6 +449,35 @@ def main():
     p_sched = subparsers.add_parser("scheduler", help="启动自动化调度器")
     p_sched.add_argument("--duration", type=int, default=300, help="运行时长（秒，默认300）")
 
+    # us-track
+    p_us = subparsers.add_parser("us-track", help="美股跟踪体系")
+    p_us.add_argument("--output", type=str, help="报告输出文件路径")
+
+    # sentiment
+    p_sent = subparsers.add_parser("sentiment", help="市场情绪/冰点分析")
+    p_sent.add_argument("--index", type=float, help="当前指数点位，如: 4068")
+    p_sent.add_argument("--prev-close", type=float, help="前收盘点位，如: 4090")
+    p_sent.add_argument("--down", type=int, help="下跌家数，如: 3900")
+    p_sent.add_argument("--limitup", type=int, help="涨停家数，如: 22")
+    p_sent.add_argument("--limitdown", type=int, help="跌停家数，如: 71")
+    p_sent.add_argument("--northbound", type=float, help="北向净流入(亿)，如: 140")
+    p_sent.add_argument("--turnover", type=float, help="成交额(万亿)，如: 3.34")
+    p_sent.add_argument("--ma30", type=float, help="30日线位置，如: 4130")
+    p_sent.add_argument("--output", type=str, help="报告输出文件路径")
+
+    # limitup
+    p_lu = subparsers.add_parser("limitup", help="连板天梯 + 主线分化")
+    p_lu.add_argument("--output", type=str, help="报告输出文件路径")
+
+    # opening
+    p_open = subparsers.add_parser("opening", help="低开应对策略")
+    p_open.add_argument("--open-price", type=float, help="开盘价，如: 4055")
+    p_open.add_argument("--prev-close", type=float, help="前收盘，如: 4068")
+    p_open.add_argument("--volume-ratio", type=float, help="量比，如: 0.8")
+    p_open.add_argument("--northbound", type=float, help="北向净流入(亿)，如: 140")
+    p_open.add_argument("--ma30", type=float, help="30日线，如: 4130")
+    p_open.add_argument("--output", type=str, help="报告输出文件路径")
+
     args = parser.parse_args()
 
     if args.command is None:
@@ -341,6 +492,10 @@ def main():
         "news": cmd_news,
         "risk": cmd_risk,
         "scheduler": cmd_scheduler,
+        "us-track": cmd_us_track,
+        "sentiment": cmd_sentiment,
+        "limitup": cmd_limitup,
+        "opening": cmd_opening,
     }
 
     handler = commands.get(args.command)
